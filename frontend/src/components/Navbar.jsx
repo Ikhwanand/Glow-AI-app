@@ -44,7 +44,13 @@ const Navbar = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
-            <Link to="/" className='flex-shrink-0 flex items-center'>
+            <Link to="/" className='flex-shrink-0 flex items-center space-x-1'>
+              <motion.img 
+                src='/skin-doctor.svg'
+                alt='Skin Doctor Logo'
+                className='h-15 w-15'
+                whileHover={{ scale: 1.05 }}
+              />
               <motion.span 
                 className="text-primary font-bold text-xl"
                 whileHover={{ scale: 1.05 }}
