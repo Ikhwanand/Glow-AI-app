@@ -13,10 +13,6 @@ from pydantic import BaseModel, Field
 from typing import List, Optional
 
 
-load_dotenv()
-
-API_KEY = os.getenv("GOOGLE_API_KEY")
-
 
 # Class structured agent
 class SkinConcern(BaseModel):
@@ -93,118 +89,117 @@ class SkinAnalysisResponse(BaseModel):
             }
         }
 
+def analyze_skin(image_url, user_api_key=None):
+    # Set up Agno Agent with Gemini model
+    search_agent = Agent(
+        name="Searching",
+        role="You are a search agent that can search the web for relevant information about the skin problem and how to solve it.",
+        model=Gemini(id="gemini-2.0-flash-exp", api_key=user_api_key),
+        tools=[DuckDuckGoTools()],
+        add_name_to_instructions=True,
+        instructions="""
+        When searching for skin-related information:
+        1. Focus on finding reliable medical sources (Mayo Clinic, WebMD, dermatology journals)
+        2. Prioritize recent research and studies (last 3 years)
+        3. Look for both treatment options and prevention methods
+        4. Include information about different skin types and conditions
+        5. Verify information from multiple reputable sources
+        6. Pay special attention to:
+        - Acne and acne scars treatments
+        - Hyperpigmentation solutions
+        - Anti-aging recommendations
+        - Skin hydration techniques
+        - Sun protection methods
+        7. Always include source links for reference
+        8. Present findings in clear, organized bullet points
+        """,
+    )
 
-# Set up Agno Agent with Gemini model
-search_agent = Agent(
-    name="Searching",
-    role="You are a search agent that can search the web for relevant information about the skin problem and how to solve it.",
-    model=Gemini(id="gemini-2.0-flash-exp", api_key=API_KEY),
-    tools=[DuckDuckGoTools()],
-    add_name_to_instructions=True,
-    instructions="""
-    When searching for skin-related information:
-    1. Focus on finding reliable medical sources (Mayo Clinic, WebMD, dermatology journals)
-    2. Prioritize recent research and studies (last 3 years)
-    3. Look for both treatment options and prevention methods
-    4. Include information about different skin types and conditions
-    5. Verify information from multiple reputable sources
-    6. Pay special attention to:
-       - Acne and acne scars treatments
-       - Hyperpigmentation solutions
-       - Anti-aging recommendations
-       - Skin hydration techniques
-       - Sun protection methods
-    7. Always include source links for reference
-    8. Present findings in clear, organized bullet points
-    """,
-)
+    research_agent = Agent(
+        name="Researcher",
+        role="You are a researcher that can research the web for relevant information about the skin problem and how to solve it.",
+        model=Gemini(id="gemini-2.0-flash-exp", api_key=user_api_key),
+        tools=[ArxivTools()],
+        add_name_to_instructions=True,
+        instructions="""
+        When researching skin-related information:
+        1. Focus exclusively on peer-reviewed dermatology journals and medical research papers
+        2. Prioritize studies published within the last 2 years for the most current findings
+        3. Search for:
+        - Clinical trial results for new treatments
+        - Emerging skin conditions and their treatments
+        - Breakthrough therapies and their efficacy rates
+        - Comparative studies between treatment methods
+        4. Always verify findings across multiple reputable sources
+        5. Include complete citation information (authors, journal, DOI)
+        6. Present findings in this structured format:
+        [Condition/Problem]
+        - Latest research findings
+        - Treatment options (with success rates)
+        - Potential side effects
+        - Recommended protocols
+        7. Highlight any FDA-approved treatments separately
+        8. Include links to full papers when available
+        9. For controversial topics, present both sides with evidence
+        """,
+    )
 
-research_agent = Agent(
-    name="Researcher",
-    role="You are a researcher that can research the web for relevant information about the skin problem and how to solve it.",
-    model=Gemini(id="gemini-2.0-flash-exp", api_key=API_KEY),
-    tools=[ArxivTools()],
-    add_name_to_instructions=True,
-    instructions="""
-    When researching skin-related information:
-    1. Focus exclusively on peer-reviewed dermatology journals and medical research papers
-    2. Prioritize studies published within the last 2 years for the most current findings
-    3. Search for:
-       - Clinical trial results for new treatments
-       - Emerging skin conditions and their treatments
-       - Breakthrough therapies and their efficacy rates
-       - Comparative studies between treatment methods
-    4. Always verify findings across multiple reputable sources
-    5. Include complete citation information (authors, journal, DOI)
-    6. Present findings in this structured format:
-       [Condition/Problem]
-       - Latest research findings
-       - Treatment options (with success rates)
-       - Potential side effects
-       - Recommended protocols
-    7. Highlight any FDA-approved treatments separately
-    8. Include links to full papers when available
-    9. For controversial topics, present both sides with evidence
-    """,
-)
+    image_agent = Agent(
+        model=Gemini(id="gemini-2.0-flash-exp", api_key=user_api_key),
+        agent_id="dermatologist",
+        name="Skin Dermatologist",
+        markdown=True,
+        instructions=[
+            "You are a dermatologist AI that analyzes skin conditions from images.",
+            "Provide detailed descriptions and potential diagnoses based on the images you receive.",
+        ],
+    )
 
-image_agent = Agent(
-    model=Gemini(id="gemini-2.0-flash-exp", api_key=API_KEY),
-    agent_id="dermatologist",
-    name="Skin Dermatologist",
-    markdown=True,
-    instructions=[
-        "You are a dermatologist AI that analyzes skin conditions from images.",
-        "Provide detailed descriptions and potential diagnoses based on the images you receive.",
-    ],
-)
-
-agent = Team(
-    name="Skin Dermatologist Team",
-    mode="route",
-    model=Gemini(
-        id="gemini-2.0-flash-exp", api_key=API_KEY
-    ),  # Using the strongest multi-modal model
-    members=[image_agent, search_agent, research_agent],
-    instructions="""
-    As a dermatologist expert team, your responsibilities are:
-    1. Analyze skin images with clinical precision
-    2. Collaborate with search and research agents to:
-       - Verify diagnosis with latest medical information
-       - Cross-reference treatment options
-       - Identify emerging therapies
-    3. Provide comprehensive analysis including:
-       - Condition identification
-       - Severity assessment
-       - Root cause analysis
-    4. Create personalized treatment plans that consider:
-       - Skin type
-       - Medical history
-       - Lifestyle factors
-       - Budget considerations
-    5. Present information in clear, patient-friendly language
-    6. Always include:
-       - Primary recommended treatment
-       - Alternative options
-       - Prevention strategies
-       - Expected timeline for results
-    7. For complex cases:
-       - Consult with research agent for latest studies
-       - Verify with search agent for clinical guidelines
-       - Present multiple approaches with pros/cons
-    8. Maintain professional medical standards in all recommendations
-    """,
-    show_tool_calls=True,
-    markdown=True,
-    debug_mode=True,
-    show_members_responses=True,
-    enable_team_history=True,
-    use_json_mode=True,
-    response_model=SkinAnalysisResponse,
-)
+    agent = Team(
+        name="Skin Dermatologist Team",
+        mode="route",
+        model=Gemini(
+            id="gemini-2.0-flash-exp", api_key=user_api_key),  # Using the strongest multi-modal model
+        members=[image_agent, search_agent, research_agent],
+        instructions="""
+        As a dermatologist expert team, your responsibilities are:
+        1. Analyze skin images with clinical precision
+        2. Collaborate with search and research agents to:
+        - Verify diagnosis with latest medical information
+        - Cross-reference treatment options
+        - Identify emerging therapies
+        3. Provide comprehensive analysis including:
+        - Condition identification
+        - Severity assessment
+        - Root cause analysis
+        4. Create personalized treatment plans that consider:
+        - Skin type
+        - Medical history
+        - Lifestyle factors
+        - Budget considerations
+        5. Present information in clear, patient-friendly language
+        6. Always include:
+        - Primary recommended treatment
+        - Alternative options
+        - Prevention strategies
+        - Expected timeline for results
+        7. For complex cases:
+        - Consult with research agent for latest studies
+        - Verify with search agent for clinical guidelines
+        - Present multiple approaches with pros/cons
+        8. Maintain professional medical standards in all recommendations
+        """,
+        show_tool_calls=True,
+        markdown=True,
+        debug_mode=True,
+        show_members_responses=True,
+        enable_team_history=True,
+        use_json_mode=True,
+        response_model=SkinAnalysisResponse,
+    )
 
 
-def analyze_skin(image_url):
+
     # Analyze the skin image
     analysis_prompt = """
     Analyze this facial skin image in detail and provide a structured assessment in the following format:

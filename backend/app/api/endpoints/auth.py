@@ -21,7 +21,8 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class UserCreate(BaseModel):
     name: str 
     email: EmailStr
-    password: str 
+    password: str
+    gemini_api_key: str
     
     @validator('password')
     def password_complexity(cls, v):
@@ -55,7 +56,8 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
     db_user = User(
         name=user.name,
         email=user.email,
-        hashed_password=hashed_password
+        hashed_password=hashed_password,
+        gemini_api_key=user.gemini_api_key
     )
 
     db.add(db_user)

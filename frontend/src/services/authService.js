@@ -6,6 +6,7 @@ export const authService = {
       name: userData.name,
       email: userData.email,
       password: userData.password,
+      gemini_api_key: userData.gemini_api_key,
     });
     return response;
   },

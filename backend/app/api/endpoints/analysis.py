@@ -80,7 +80,7 @@ async def analyze_skin_image(request: Request, image: UploadFile = File(...), cu
 
     # Perform AI analysis
     try:
-        analysis_result = analyze_skin(filepath)
+        analysis_result = analyze_skin(filepath, current_user.gemini_api_key)
 
         # Validate and convert AI response
         if isinstance(analysis_result, str):
