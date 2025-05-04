@@ -55,7 +55,7 @@ const Navbar = () => {
                 className="text-primary font-bold text-xl"
                 whileHover={{ scale: 1.05 }}
               >
-                Skin Doctor AI
+                GlowAI
               </motion.span>
             </Link>
           </div>
