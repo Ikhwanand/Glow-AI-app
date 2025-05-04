@@ -138,6 +138,15 @@ const RegisterPage = () => {
                   )}
                 </button>
               </div>
+              <div className="mt-1 text-xs text-gray-500">
+                <p>Password must:</p>
+                <ul className="list-disc pl-5">
+                  <li>Be at least 8 characters long</li>
+                  <li>Contain at least one uppercase letter</li>
+                  <li>Contain at least one lowercase letter</li>
+                  <li>Contain at least one digit</li>
+                </ul>
+              </div>
             </div>
             
             <div>
