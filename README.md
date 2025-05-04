@@ -1,4 +1,4 @@
-# Skin Doctor App
+# GlowAI App
 
 A comprehensive web application for skin health analysis and tracking, combining AI-powered diagnostics with personal skincare management.
 
