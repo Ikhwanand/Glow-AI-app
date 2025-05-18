@@ -5,6 +5,7 @@ export const authService = {
     const response = await api.post("/auth/register", {
       name: userData.name,
       email: userData.email,
+      country: userData.country,
       password: userData.password,
       gemini_api_key: userData.gemini_api_key,
     });

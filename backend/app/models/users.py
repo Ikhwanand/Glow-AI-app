@@ -9,6 +9,7 @@ class User(Base):
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
+    country = Column(String, nullable=False)
     hashed_password = Column(String, nullable=False)
     profile_image = Column(String, nullable=True)
     gemini_api_key = Column(String, nullable=True)

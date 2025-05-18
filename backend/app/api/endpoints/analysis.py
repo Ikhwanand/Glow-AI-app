@@ -80,14 +80,16 @@ async def analyze_skin_image(request: Request, image: UploadFile = File(...), cu
 
     # Perform AI analysis
     try:
-        analysis_result = analyze_skin(filepath, current_user.gemini_api_key)
+        user_api_key = current_user.gemini_api_key
+        user_country = current_user.country
+        analysis_result = analyze_skin(filepath, user_api_key,  user_country)
 
         # Validate and convert AI response
         if isinstance(analysis_result, str):
             analysis_result = json.loads(analysis_result)
 
         # Validate required fields
-        required_fields = ["overall_health", "skin_type", "concerns", "recommendations", "analysis_metrics"]
+        required_fields = ["overall_health", "skin_type", "concerns", "recommendations", "analysis_metrics", "skincare_products"]
         if not all(field in analysis_result for field in required_fields):
             raise ValueError("Invalid AI response structure")
         
@@ -99,7 +101,8 @@ async def analyze_skin_image(request: Request, image: UploadFile = File(...), cu
             skin_type=analysis_result["skin_type"],
             concerns=analysis_result["concerns"],
             recommendations=analysis_result["recommendations"],
-            analysis_metrics=analysis_result["analysis_metrics"]
+            analysis_metrics=analysis_result["analysis_metrics"],
+            skincare_products=analysis_result["skincare_products"]
         )
         db.add(analysis)
 
@@ -146,6 +149,7 @@ async def analyze_skin_image(request: Request, image: UploadFile = File(...), cu
                     "concerns": analysis.concerns,
                     "recommendations": analysis.recommendations,
                     "analysis_metrics": analysis.analysis_metrics,
+                    "skincare_products": analysis.skincare_products,
                     "created_at": analysis.created_at.isoformat()
                 },
                 "skin_profile": {
@@ -232,6 +236,7 @@ async def get_analysis_history(
             "concerns": analysis.concerns,
             "recommendations": analysis.recommendations,
             "analysis_metrics": analysis.analysis_metrics,
+            "skincare_products": analysis.skincare_products,
             "created_at": analysis.created_at.isoformat()
         })
     
@@ -270,6 +275,7 @@ async def get_analysis(analysis_id: int, current_user: User = Depends(get_curren
         "concerns": analysis.concerns,
         "recommendations": analysis.recommendations,
         "analysis_metrics": analysis.analysis_metrics,
+        "skincare_products": analysis.skincare_products,
         "created_at": analysis.created_at.isoformat()
     }
     

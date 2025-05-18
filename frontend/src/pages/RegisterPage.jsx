@@ -38,6 +38,7 @@ const RegisterPage = () => {
       await authService.register({
         name: formData.name,
         email: formData.email,
+        country: formData.country,
         password: formData.password,
         gemini_api_key: formData.geminiApiKey
       });
@@ -104,6 +105,22 @@ const RegisterPage = () => {
                 onChange={handleChange}
                 className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-primary focus:border-primary"
                 required
+              />
+            </div>
+
+            <div>
+              <label htmlFor="country" className="block text-sm font-medium">
+                Country
+              </label>
+              <input
+                type="text"
+                id="country"
+                name="country"
+                value={formData.country}
+                onChange={handleChange}
+                className="w-full px-4 py-2 mt-1 border rounded-md focus:ring-primary focus:border-primary"
+                required
+                placeholder="Input country where you lived."
               />
             </div>
             

@@ -14,6 +14,7 @@ class Analysis(Base):
     concerns = Column(JSON, nullable=True)
     recommendations = Column(JSON, nullable=True)
     analysis_metrics = Column(JSON, nullable=True)
+    skincare_products = Column(JSON, nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
 

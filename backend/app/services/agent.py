@@ -2,6 +2,8 @@ from agno.agent import Agent
 from agno.models.google import Gemini
 from agno.media import Image
 from agno.tools.duckduckgo import DuckDuckGoTools
+from agno.tools.baidusearch import BaiduSearchTools
+from google.adk.tools import google_search
 from agno.tools.arxiv import ArxivTools
 from agno.team.team import Team
 import os
@@ -21,6 +23,18 @@ class SkinConcern(BaseModel):
     type: Optional[str] = Field(None, description="Specific type of concern")
     confidence: float = Field(..., description="Confidence score between 0.0 and 1.0")
 
+
+class SkincareProducts(BaseModel):
+    title: str = Field(..., description="Title of the skincare product")
+    description: str = Field(..., description="Description of the skincare product")
+    priority: str = Field(..., description="Priority level (High/Medium/Low)")
+    link: str = Field(..., description="Link to the product page")
+    price: str = Field(..., description="Price of the product")
+    how_to_use: str = Field(..., description="How to use the product")
+    benefits: str = Field(..., description="Benefits of the product")
+    side_effects: str = Field(..., description="Side effects of the product")
+    dosage: str = Field(..., description="Dosage instructions for the product")
+    
 
 class Recommendation(BaseModel):
     title: str = Field(..., description="Title of the recommendation")
@@ -59,6 +73,9 @@ class SkinAnalysisResponse(BaseModel):
     analysis_metrics: AnalysisMetrics = Field(
         ..., description="Quantitative analysis metrics"
     )
+    skincare_products: List[SkincareProducts] = Field(
+       ..., description="List of recommended skincare products"
+    )
 
     class Config:
         json_schema_extra = {
@@ -86,18 +103,36 @@ class SkinAnalysisResponse(BaseModel):
                     "pore_visibility": 85,
                     "overall_score": 35,
                 },
+                "skincare_products": [
+                    {
+                    "title": "Acne Cream",
+                    "description": "Acne Cream is a gentle and effective treatment for acne. It helps to break down the dead skin cells, reducing the appearance of pores and wrinkles. Acne Cream is available in various formulations, including moisturizing, hydrating, and anti-inflammatory.",
+                    "priority": "High",
+                    "link": "URL_ADDRESS.amazon.com/Acne-Cream-100-Count/dp/B07K54K21K",
+                    "price": "$20.00",
+                    "how_to_use": "Apply the product to the affected area, follow the instructions on the package, and rinse thoroughly after use.",
+                    "benefits": "Acne Cream helps break down dead skin cells, reducing the appearance of pores and wrinkles.",
+                    "side_effects": "There are no known side effects associated with Acne Cream.",
+                    "dosage": "Apply the product according to the instructions on the package.",
+                    },
+                ]
             }
         }
+        
 
-def analyze_skin(image_url, user_api_key=None):
+
+
+
+
+def analyze_skin(image_url, user_api_key=None, country=None):
     # Set up Agno Agent with Gemini model
     search_agent = Agent(
         name="Searching",
         role="You are a search agent that can search the web for relevant information about the skin problem and how to solve it.",
         model=Gemini(id="gemini-2.0-flash-exp", api_key=user_api_key),
-        tools=[DuckDuckGoTools()],
+        tools=[google_search, DuckDuckGoTools(), BaiduSearchTools()],
         add_name_to_instructions=True,
-        instructions="""
+        instructions=f"""
         When searching for skin-related information:
         1. Focus on finding reliable medical sources (Mayo Clinic, WebMD, dermatology journals)
         2. Prioritize recent research and studies (last 3 years)
@@ -112,6 +147,7 @@ def analyze_skin(image_url, user_api_key=None):
         - Sun protection methods
         7. Always include source links for reference
         8. Present findings in clear, organized bullet points
+        9. Give recommendations scincare product that available in {country}.
         """,
     )
 
@@ -201,7 +237,7 @@ def analyze_skin(image_url, user_api_key=None):
 
 
     # Analyze the skin image
-    analysis_prompt = """
+    analysis_prompt =f"""
     Analyze this facial skin image in detail and provide a structured assessment in the following format:
 
     1. Overall Skin Health Assessment:
@@ -229,6 +265,19 @@ def analyze_skin(image_url, user_api_key=None):
     - Texture uniformity score (0-100)
     - Pore visibility rating (0-100)
     - Overall skin health score (0-100)
+    
+    5. Skincare Product Recommendations:
+    - List recommended skincare products
+    - For each product:
+        * Title
+        * Description
+        * Priority level (High, Medium, Low)
+        * Link to the product page
+        * Price with currency symbols that have been adjusted to the country of {country}
+        * How to use
+        * Benefits
+        * Side effects
+        * Dosage instructions
 
     Format your response as a Python dictionary exactly matching this structure:
      1. Required Fields:
@@ -236,151 +285,46 @@ def analyze_skin(image_url, user_api_key=None):
     - skin_type: A string specifying skin type (e.g., "Oily", "Dry", "Combination", "Normal")
     
     2. concerns: A JSON array of objects, each containing:
-    {
+    {{
         "name": "Name of the skin concern",
         "severity": "Severity level (Mild/Moderate/Severe)",
         "type": "Specific type of concern or null",
         "confidence": "Confidence score between 0.0 and 1.0"
-    }
+    }}
     
     3. recommendations: A JSON array of objects, each containing:
-    {
+    {{
         "title": "Title of the recommendation",
         "description": "Detailed description of the recommendation",
         "priority": "Priority level (High/Medium/Low)"
-    }
+    }}
     
     4. analysis_metrics: A JSON object containing:
-    {
+    {{
         "skin_hydration": "Score from 0-100",
         "texture_uniformity": "Score from 0-100",
         "pore_visibility": "Score from 0-100",
         "overall_score": "Score from 0-100"
-    }
+    }}
+    
+    5. skincare_products: A JSON array of objects, each containing:
+    {{
+        "title": "Title of the skincare product",
+        "description": "Description of the skincare product",
+        "priority": "Priority level (High/Medium/Low)",
+        "link": "Link to the product page",
+        "price": "Price of the product",
+        "how_to_use": "How to use the product",
+        "benefits": "Benefits of the product",
+        "side_effects": "Side effects of the product",
+        "dosage": "Dosage instructions for the product"
+    }}
 
     Ensure all fields are present and properly formatted as they are required by the database schema.
     Return the analysis in a format that exactly matches these database fields.
     """
+
     response = agent.run(analysis_prompt, images=[Image(filepath=image_url)])
     response_json = response.content.model_dump_json(indent=2)
 
     return response_json
-
-    # Convert the response to a Python dictionary
-
-
-#  import json
-
-#  try:
-#    analysis_data = json.loads(response.content)
-
-#    # Validate required fields match the database schema
-#    required_fields = [
-#       "overall_health",
-#       "skin_type",
-#       "concerns",
-#       "recommendations",
-#       "analysis_metrics"
-#    ]
-
-#    if not all(field in analysis_data for field in required_fields):
-#       raise ValueError("Missing required fields in AI response")
-
-#    return analysis_data
-#  except json.JSONDecodeError:
-#    return ValueError("Failed to parse AI response into the required format")
-
-# def compare_progress(user_data):
-#     # Compare user data with previous analysis
-#     if len(user_data) < 2:
-#         return APIResponse(
-#             success=False,
-#             message="Not enough data to compare progress.",
-#         )
-
-#     latest_data = user_data[-1]
-#     previous_data = user_data[-2]
-
-#     comparison_prompt = f"""
-#     Compare the following two skin analyses and provide a structured assessment in the following format:
-
-#     1. Overall Progress Assessment:
-#     - Evaluate the overall improvement status (Improved, Maintained, Declined)
-#     - Calculate improvement percentage for key metrics
-#     - Identify major changes in skin condition
-
-#     2. Specific Changes Analysis:
-#     For each skin concern, provide:
-#     - Previous vs current severity
-#     - Improvement status
-#     - Contributing factors
-
-#     3. Key Metrics Comparison:
-#     Compare numerical metrics:
-#     - Skin hydration
-#     - Texture uniformity
-#     - Pore visibility
-#     - Overall score
-
-#     4. Recommendations:
-#     Based on the progress:
-#     - What to continue doing
-#     - What to modify
-#     - New suggestions
-
-#     Format your response as a JSON object with this exact structure:
-#     {
-#         "overall_progress": {
-#             "status": "Improved/Maintained/Declined",
-#             "improvement_percentage": float,
-#             "summary": "Brief summary of major changes"
-#         },
-#         "metrics_comparison": {
-#             "skin_hydration": {"previous": float, "current": float, "change": float},
-#             "texture_uniformity": {"previous": float, "current": float, "change": float},
-#             "pore_visibility": {"previous": float, "current": float, "change": float},
-#             "overall_score": {"previous": float, "current": float, "change": float}
-#         },
-#         "concerns_progress": [
-#             {
-#                 "concern": "concern name",
-#                 "previous_severity": "severity",
-#                 "current_severity": "severity",
-#                 "status": "Improved/Maintained/Declined",
-#                 "notes": "specific observations"
-#             }
-#         ],
-#         "recommendations": [
-#             {
-#                 "category": "Continue/Modify/New",
-#                 "action": "specific action",
-#                 "reason": "explanation"
-#             }
-#         ]
-#     }
-
-#     Previous analysis ({previous_data.timestamp}):
-#     {previous_data.analysis}
-
-#     Latest analysis ({latest_data.timestamp}):
-#     {latest_data.analysis}
-#     """
-
-#     response = agent.run(comparison_prompt)
-
-#     try:
-#         import json
-#         structured_response = json.loads(response.content)
-#         return {
-#             "status": "success",
-#             "timestamp_comparison": {
-#                 "previous": previous_data.timestamp,
-#                 "current": latest_data.timestamp
-#             },
-#             "data": structured_response
-#         }
-#     except json.JSONDecodeError:
-#         return APIResponse(
-#             success=False,
-#             message="Failed to parse AI response into the required format"
-#         )

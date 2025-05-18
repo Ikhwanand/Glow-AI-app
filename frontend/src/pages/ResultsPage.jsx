@@ -7,6 +7,7 @@ import jsPDF from "jspdf";
 import html2canvas from "html2canvas";
 import ProgressChart from "../components/ProgressChart";
 import ConcernsProgress from "../components/ConcernsProgress";
+import SkincareRecommendations from "../components/SkincareRecommendations";
 
 const ResultsPage = () => {
   const [activeTab, setActiveTab] = useState("assessment");
@@ -63,6 +64,7 @@ const ResultsPage = () => {
             pore_visibility: 0,
             overall_score: 0,
           },
+          skincareRecommendations: analysisResponse.data.skincare_products || [],
           createdAt: analysisResponse.data.created_at,
         });
       }
@@ -314,7 +316,7 @@ const ResultsPage = () => {
       const pdf = new jsPDF("p", "pt", "a4");
       const pdfWidth = pdf.internal.pageSize.getWidth();
       const pdfHeight = pdf.internal.pageSize.getHeight();
-      const ratio = canvas.width / canvas.height;
+      // const ratio = canvas.width / canvas.height;
       const imgWidth = pdfWidth;
       const imgHeight = (canvas.height * pdfWidth) / canvas.width;
 
@@ -513,36 +515,46 @@ const ResultsPage = () => {
             Analysis Results
           </h1>
 
-          <div className="flex border-b mb-8">
+          <div className="flex flex-wrap border-b mb-8 overflow-x-auto">
             <button
-              className={`px-4 py-2 font-medium ${
+              className={`px-3 py-2 text-sm md:text-base md:px-4 md:py-2 font-medium whitespace-nowrap ${
                 activeTab === "assessment"
                   ? "text-primary border-b-2 border-primary"
-                  : "text-lightText"
+                  : "text-lightText hover:text-gray-700"
               }`}
               onClick={() => setActiveTab("assessment")}
             >
               Assessment
             </button>
             <button
-              className={`px-4 py-2 font-medium ${
+              className={`px-3 py-2 text-sm md:text-base md:px-4 md:py-2 font-medium whitespace-nowrap ${
                 activeTab === "metrics"
                   ? "text-primary border-b-2 border-primary"
-                  : "text-lightText"
+                  : "text-lightText hover:text-gray-700"
               }`}
               onClick={() => setActiveTab("metrics")}
             >
               Metrics
             </button>
             <button
-              className={`px-4 py-2 font-medium ${
+              className={`px-3 py-2 text-sm md:text-base md:px-4 md:py-2 font-medium whitespace-nowrap ${
                 activeTab === "progress"
                   ? "text-primary border-b-2 border-primary"
-                  : "text-lightText"
+                  : "text-lightText hover:text-gray-700"
               }`}
               onClick={() => setActiveTab("progress")}
             >
               Progress
+            </button>
+            <button
+              className={`px-3 py-2 text-sm md:text-base md:px-4 md:py-2 font-medium whitespace-nowrap ${
+                activeTab === "skincareRecommendations"
+                 ? "text-primary border-b-2 border-primary"
+                 : "text-lightText hover:text-gray-700"
+              }`}
+              onClick={() => setActiveTab("skincareRecommendations")}
+            >
+              Skincare Recommendations
             </button>
           </div>
 
@@ -721,6 +733,13 @@ const ResultsPage = () => {
             //     )}
             //   </div>
             // </div>
+          )}
+
+          {activeTab === "skincareRecommendations" && (
+            <div className="mb-8">
+              <SkincareRecommendations products={analysisData.skincareRecommendations} />
+
+            </div>
           )}
 
           <div className="flex justify-center space-x-4">

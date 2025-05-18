@@ -21,6 +21,7 @@ pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 class UserCreate(BaseModel):
     name: str 
     email: EmailStr
+    country: str
     password: str
     gemini_api_key: str
     
@@ -51,11 +52,20 @@ async def register(user: UserCreate, db: Session = Depends(get_db)):
             detail="Email already registered"
         )
     
+    # Check if gemini_api_key is valid
+    gemini_api_key_check = db.query(User).filter(User.gemini_api_key == user.gemini_api_key).first()
+    if gemini_api_key_check:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Gemini API key already registered"
+        )
+    
     # Hash password and create user
     hashed_password = pwd_context.hash(user.password)
     db_user = User(
         name=user.name,
         email=user.email,
+        country=user.country,
         hashed_password=hashed_password,
         gemini_api_key=user.gemini_api_key
     )
