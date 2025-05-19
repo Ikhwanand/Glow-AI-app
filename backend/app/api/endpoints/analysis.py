@@ -7,7 +7,7 @@ from app.services.agent import analyze_skin
 from app.core.security import get_current_user
 from app.models.users import User
 from app.schemas.responses import APIResponse
-from app.schemas.analysis import AnalysisResponse
+from app.models.journals import Journals
 import aiofiles
 import os
 from datetime import datetime
@@ -80,9 +80,22 @@ async def analyze_skin_image(request: Request, image: UploadFile = File(...), cu
 
     # Perform AI analysis
     try:
+        query = db.query(Journals).filter(Journals.user_id == current_user.id)
+
+        journals = query.order_by(Journals.created_at.desc()).all()
+        # Convert SQLAlchemy model to dictionary
+        journals_list = []
+        for journal in journals:
+            journals_list.append({
+                "title": journal.title,
+                "content": journal.content,
+                "created_at": journal.created_at,
+                "updated_at": journal.updated_at
+            })
+
         user_api_key = current_user.gemini_api_key
         user_country = current_user.country
-        analysis_result = analyze_skin(filepath, user_api_key,  user_country)
+        analysis_result = analyze_skin(filepath, user_api_key,  user_country, journals_list)
 
         # Validate and convert AI response
         if isinstance(analysis_result, str):

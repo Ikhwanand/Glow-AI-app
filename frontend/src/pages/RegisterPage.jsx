@@ -46,7 +46,26 @@ const RegisterPage = () => {
       toast.success("Registration successful! Please login.");
       navigate("/login");
     } catch (error) {
-      toast.error(error.response?.detail || "Registration failed");
+      console.error("Registration error:", error);
+
+      if (error.response) {
+        const errorData = error.response.data;
+
+        if (errorData.detail) {
+          toast.error(errorData.detail);
+        }
+        // } else if (typeof errorData === 'string') {
+        //   toast.error(errorData);
+        // } else if (errorData.message) {
+        //   toast.error(errorData.message);
+        // } else if (Array.isArray(errorData)) {
+        //   toast.error(errorData.map(err => err.msg).join('. '));
+        // } else {
+        //   toast.error("An unexpected error occurred: " + JSON.stringify(errorData));
+        // }
+      } else {
+        toast.error(error.detail || "Registration failed");
+      }
     } finally {
       setIsLoading(false);
     }

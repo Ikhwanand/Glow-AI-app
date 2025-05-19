@@ -3,7 +3,7 @@ from agno.models.google import Gemini
 from agno.media import Image
 from agno.tools.duckduckgo import DuckDuckGoTools
 from agno.tools.baidusearch import BaiduSearchTools
-from google.adk.tools import google_search
+from agno.tools.googlesearch import GoogleSearchTools
 from agno.tools.arxiv import ArxivTools
 from agno.team.team import Team
 import os
@@ -14,7 +14,8 @@ from dotenv import load_dotenv
 from pydantic import BaseModel, Field
 from typing import List, Optional
 
-
+load_dotenv()
+os.environ["GOOGLE_CSE_ID"] = os.getenv("GOOGLE_CSE_ID")
 
 # Class structured agent
 class SkinConcern(BaseModel):
@@ -124,13 +125,13 @@ class SkinAnalysisResponse(BaseModel):
 
 
 
-def analyze_skin(image_url, user_api_key=None, country=None):
+def analyze_skin(image_url, user_api_key=None, country=None, journals=None):
     # Set up Agno Agent with Gemini model
     search_agent = Agent(
         name="Searching",
         role="You are a search agent that can search the web for relevant information about the skin problem and how to solve it.",
         model=Gemini(id="gemini-2.0-flash-exp", api_key=user_api_key),
-        tools=[google_search, DuckDuckGoTools(), BaiduSearchTools()],
+        tools=[GoogleSearchTools(), DuckDuckGoTools(), BaiduSearchTools()],
         add_name_to_instructions=True,
         instructions=f"""
         When searching for skin-related information:
@@ -147,7 +148,7 @@ def analyze_skin(image_url, user_api_key=None, country=None):
         - Sun protection methods
         7. Always include source links for reference
         8. Present findings in clear, organized bullet points
-        9. Give recommendations scincare product that available in {country}.
+        9. Give recommendations scincare product that available in {country}, You can use e-commerce products that operate in the {country}.
         """,
     )
 
@@ -191,50 +192,94 @@ def analyze_skin(image_url, user_api_key=None, country=None):
         ],
     )
 
-    agent = Team(
-        name="Skin Dermatologist Team",
-        mode="route",
-        model=Gemini(
-            id="gemini-2.0-flash-exp", api_key=user_api_key),  # Using the strongest multi-modal model
-        members=[image_agent, search_agent, research_agent],
-        instructions="""
-        As a dermatologist expert team, your responsibilities are:
-        1. Analyze skin images with clinical precision
-        2. Collaborate with search and research agents to:
-        - Verify diagnosis with latest medical information
-        - Cross-reference treatment options
-        - Identify emerging therapies
-        3. Provide comprehensive analysis including:
-        - Condition identification
-        - Severity assessment
-        - Root cause analysis
-        4. Create personalized treatment plans that consider:
-        - Skin type
-        - Medical history
-        - Lifestyle factors
-        - Budget considerations
-        5. Present information in clear, patient-friendly language
-        6. Always include:
-        - Primary recommended treatment
-        - Alternative options
-        - Prevention strategies
-        - Expected timeline for results
-        7. For complex cases:
-        - Consult with research agent for latest studies
-        - Verify with search agent for clinical guidelines
-        - Present multiple approaches with pros/cons
-        8. Maintain professional medical standards in all recommendations
-        """,
-        show_tool_calls=True,
-        markdown=True,
-        debug_mode=True,
-        show_members_responses=True,
-        enable_team_history=True,
-        use_json_mode=True,
-        response_model=SkinAnalysisResponse,
-    )
-
-
+    
+    if journals is not None or journals != []:
+        agent = Team(
+            name="Skin Dermatologist Team",
+            mode="route",
+            model=Gemini(
+                id="gemini-2.0-flash-exp", api_key=user_api_key),  # Using the strongest multi-modal model
+            members=[image_agent, search_agent, research_agent],
+            instructions=f"""
+            As a dermatologist expert team, your responsibilities are:
+            1. Analyze skin images with clinical precision
+            2. Analyze skin journals user for accurate reccomendations treatment, {journals}
+            3. Collaborate with search and research agents to:
+            - Verify diagnosis with latest medical information
+            - Cross-reference treatment options
+            - Identify emerging therapies
+            4. Provide comprehensive analysis including:
+            - Condition identification
+            - Severity assessment
+            - Root cause analysis
+            5. Create personalized treatment plans that consider:
+            - Skin type
+            - Medical history
+            - Lifestyle factors
+            - Budget considerations
+            6. Present information in clear, patient-friendly language
+            7. Always include:
+            - Primary recommended treatment
+            - Alternative options
+            - Prevention strategies
+            - Expected timeline for results
+            8. For complex cases:
+            - Consult with research agent for latest studies
+            - Verify with search agent for clinical guidelines
+            - Present multiple approaches with pros/cons
+            9. Maintain professional medical standards in all recommendations
+            """,
+            show_tool_calls=True,
+            markdown=True,
+            debug_mode=True,
+            show_members_responses=True,
+            enable_team_history=True,
+            use_json_mode=True,
+            response_model=SkinAnalysisResponse,
+        )
+    else:
+        agent = Team(
+            name="Skin Dermatologist Team",
+            mode="route",
+            model=Gemini(
+                id="gemini-2.0-flash-exp", api_key=user_api_key),  # Using the strongest multi-modal model
+            members=[image_agent, search_agent, research_agent],
+            instructions=f"""
+            As a dermatologist expert team, your responsibilities are:
+            1. Analyze skin images with clinical precision
+            2. Collaborate with search and research agents to:
+            - Verify diagnosis with latest medical information
+            - Cross-reference treatment options
+            - Identify emerging therapies
+            3. Provide comprehensive analysis including:
+            - Condition identification
+            - Severity assessment
+            - Root cause analysis
+            4. Create personalized treatment plans that consider:
+            - Skin type
+            - Medical history
+            - Lifestyle factors
+            - Budget considerations
+            5. Present information in clear, patient-friendly language
+            6. Always include:
+            - Primary recommended treatment
+            - Alternative options
+            - Prevention strategies
+            - Expected timeline for results
+            7. For complex cases:
+            - Consult with research agent for latest studies
+            - Verify with search agent for clinical guidelines
+            - Present multiple approaches with pros/cons
+            8. Maintain professional medical standards in all recommendations
+            """,
+            show_tool_calls=True,
+            markdown=True,
+            debug_mode=True,
+            show_members_responses=True,
+            enable_team_history=True,
+            use_json_mode=True,
+            response_model=SkinAnalysisResponse,
+        )
 
     # Analyze the skin image
     analysis_prompt =f"""
